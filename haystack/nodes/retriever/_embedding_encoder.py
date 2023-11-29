@@ -141,12 +141,12 @@ class _SentenceTransformersEmbeddingEncoder(_BaseEmbeddingEncoder):
             )
 
     def embed(self, texts: Union[List[str], str]) -> np.ndarray:
-        # texts can be a list of strings
-        # get back list of numpy embedding vectors
-        emb = self.embedding_model.encode(
-            texts, batch_size=self.batch_size, show_progress_bar=self.show_progress_bar, convert_to_numpy=True
+        return self.embedding_model.encode(
+            texts,
+            batch_size=self.batch_size,
+            show_progress_bar=self.show_progress_bar,
+            convert_to_numpy=True,
         )
-        return emb
 
     def embed_queries(self, queries: List[str]) -> np.ndarray:
         """
@@ -322,10 +322,12 @@ class _RetribertEmbeddingEncoder(_BaseEmbeddingEncoder):
 
     def _create_dataloader(self, text_to_encode: List[dict]) -> "NamedDataLoader":
         dataset, tensor_names = self.dataset_from_dicts(text_to_encode)
-        dataloader = NamedDataLoader(
-            dataset=dataset, sampler=SequentialSampler(dataset), batch_size=self.batch_size, tensor_names=tensor_names
+        return NamedDataLoader(
+            dataset=dataset,
+            sampler=SequentialSampler(dataset),
+            batch_size=self.batch_size,
+            tensor_names=tensor_names,
         )
-        return dataloader
 
     def dataset_from_dicts(self, dicts: List[dict]):
         texts = [x["text"] for x in dicts]

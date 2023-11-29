@@ -340,10 +340,14 @@ class DensePassageRetriever(DenseRetriever):
         if scale_score is None:
             scale_score = self.scale_score
         query_emb = self.embed_queries(queries=[query])
-        documents = document_store.query_by_embedding(
-            query_emb=query_emb[0], top_k=top_k, filters=filters, index=index, headers=headers, scale_score=scale_score
+        return document_store.query_by_embedding(
+            query_emb=query_emb[0],
+            top_k=top_k,
+            filters=filters,
+            index=index,
+            headers=headers,
+            scale_score=scale_score,
         )
-        return documents
 
     def retrieve_batch(
         self,
@@ -460,11 +464,14 @@ class DensePassageRetriever(DenseRetriever):
         query_embs: List[np.ndarray] = []
         for batch in self._get_batches(queries=queries, batch_size=batch_size):
             query_embs.extend(self.embed_queries(queries=batch))
-        documents = document_store.query_by_embedding_batch(
-            query_embs=query_embs, top_k=top_k, filters=filters, index=index, headers=headers, scale_score=scale_score
+        return document_store.query_by_embedding_batch(
+            query_embs=query_embs,
+            top_k=top_k,
+            filters=filters,
+            index=index,
+            headers=headers,
+            scale_score=scale_score,
         )
-
-        return documents
 
     def _get_predictions(self, dicts: List[Dict[str, Any]]) -> Dict[str, np.ndarray]:
         """
@@ -495,11 +502,7 @@ class DensePassageRetriever(DenseRetriever):
         self.model.eval()
 
         # When running evaluations etc., we don't want a progress bar for every single query
-        if len(dataset) == 1:
-            disable_tqdm = True
-        else:
-            disable_tqdm = not self.progress_bar
-
+        disable_tqdm = True if len(dataset) == 1 else not self.progress_bar
         with tqdm(
             total=len(data_loader) * self.batch_size,
             unit=" Docs",
@@ -542,8 +545,7 @@ class DensePassageRetriever(DenseRetriever):
         :return: Embeddings, one per input query, shape: (queries, embedding_dim)
         """
         query_dicts = [{"query": q} for q in queries]
-        result = self._get_predictions(query_dicts)["query"]
-        return result
+        return self._get_predictions(query_dicts)["query"]
 
     def embed_documents(self, documents: List[Document]) -> np.ndarray:
         """
@@ -573,8 +575,7 @@ class DensePassageRetriever(DenseRetriever):
             }
             for d in documents
         ]
-        embeddings = self._get_predictions(passages)["passages"]
-        return embeddings
+        return self._get_predictions(passages)["passages"]
 
     def train(
         self,
@@ -737,8 +738,8 @@ class DensePassageRetriever(DenseRetriever):
         save_dir = Path(save_dir)
         self.model.save(save_dir, lm1_name=query_encoder_dir, lm2_name=passage_encoder_dir)
         save_dir = str(save_dir)
-        self.query_tokenizer.save_pretrained(save_dir + f"/{query_encoder_dir}")
-        self.passage_tokenizer.save_pretrained(save_dir + f"/{passage_encoder_dir}")
+        self.query_tokenizer.save_pretrained(f"{save_dir}/{query_encoder_dir}")
+        self.passage_tokenizer.save_pretrained(f"{save_dir}/{passage_encoder_dir}")
 
     @classmethod
     def load(
@@ -961,10 +962,14 @@ class TableTextRetriever(DenseRetriever):
         if scale_score is None:
             scale_score = self.scale_score
         query_emb = self.embed_queries(queries=[query])
-        documents = document_store.query_by_embedding(
-            query_emb=query_emb[0], top_k=top_k, filters=filters, index=index, headers=headers, scale_score=scale_score
+        return document_store.query_by_embedding(
+            query_emb=query_emb[0],
+            top_k=top_k,
+            filters=filters,
+            index=index,
+            headers=headers,
+            scale_score=scale_score,
         )
-        return documents
 
     def retrieve_batch(
         self,
@@ -1083,7 +1088,7 @@ class TableTextRetriever(DenseRetriever):
         batched_query_embs: List[np.ndarray] = []
         for i in range(0, len(query_embs), batch_size):
             batched_query_embs.extend(query_embs[i : i + batch_size])
-        documents = document_store.query_by_embedding_batch(
+        return document_store.query_by_embedding_batch(
             query_embs=batched_query_embs,
             top_k=top_k,
             filters=filters,
@@ -1091,8 +1096,6 @@ class TableTextRetriever(DenseRetriever):
             headers=headers,
             scale_score=scale_score,
         )
-
-        return documents
 
     def _get_predictions(self, dicts: List[Dict[str, Any]]) -> Dict[str, np.ndarray]:
         """
@@ -1124,11 +1127,7 @@ class TableTextRetriever(DenseRetriever):
         self.model.eval()
 
         # When running evaluations etc., we don't want a progress bar for every single query
-        if dataset and len(dataset) == 1:
-            disable_tqdm = True
-        else:
-            disable_tqdm = not self.progress_bar
-
+        disable_tqdm = True if dataset and len(dataset) == 1 else not self.progress_bar
         with tqdm(
             total=len(data_loader) * self.batch_size,
             unit=" Docs",
@@ -1164,8 +1163,7 @@ class TableTextRetriever(DenseRetriever):
         :return: Embeddings, one per input query, shape: (queries, embedding_dim)
         """
         query_dicts = [{"query": q} for q in queries]
-        result = self._get_predictions(query_dicts)["query"]
-        return result
+        return self._get_predictions(query_dicts)["query"]
 
     def embed_documents(self, documents: List[Document]) -> np.ndarray:
         """
@@ -1224,9 +1222,7 @@ class TableTextRetriever(DenseRetriever):
                     }
                 )
 
-        embeddings = self._get_predictions(model_input)["passages"]
-
-        return embeddings
+        return self._get_predictions(model_input)["passages"]
 
     def train(
         self,
@@ -1395,9 +1391,9 @@ class TableTextRetriever(DenseRetriever):
         save_dir = Path(save_dir)
         self.model.save(save_dir, lm1_name=query_encoder_dir, lm2_name=passage_encoder_dir, lm3_name=table_encoder_dir)
         save_dir = str(save_dir)
-        self.query_tokenizer.save_pretrained(save_dir + f"/{query_encoder_dir}")
-        self.passage_tokenizer.save_pretrained(save_dir + f"/{passage_encoder_dir}")
-        self.table_tokenizer.save_pretrained(save_dir + f"/{table_encoder_dir}")
+        self.query_tokenizer.save_pretrained(f"{save_dir}/{query_encoder_dir}")
+        self.passage_tokenizer.save_pretrained(f"{save_dir}/{passage_encoder_dir}")
+        self.table_tokenizer.save_pretrained(f"{save_dir}/{table_encoder_dir}")
 
     @classmethod
     def load(
@@ -1685,10 +1681,14 @@ class EmbeddingRetriever(DenseRetriever):
         if scale_score is None:
             scale_score = self.scale_score
         query_emb = self.embed_queries(queries=[query])
-        documents = document_store.query_by_embedding(
-            query_emb=query_emb[0], filters=filters, top_k=top_k, index=index, headers=headers, scale_score=scale_score
+        return document_store.query_by_embedding(
+            query_emb=query_emb[0],
+            filters=filters,
+            top_k=top_k,
+            index=index,
+            headers=headers,
+            scale_score=scale_score,
         )
-        return documents
 
     def retrieve_batch(
         self,
@@ -1806,7 +1806,7 @@ class EmbeddingRetriever(DenseRetriever):
         batched_query_embs: List[np.ndarray] = []
         for i in range(0, len(query_embs), batch_size):
             batched_query_embs.extend(query_embs[i : i + batch_size])
-        documents = document_store.query_by_embedding_batch(
+        return document_store.query_by_embedding_batch(
             query_embs=batched_query_embs,
             top_k=top_k,
             filters=filters,
@@ -1814,8 +1814,6 @@ class EmbeddingRetriever(DenseRetriever):
             headers=headers,
             scale_score=scale_score,
         )
-
-        return documents
 
     def embed_queries(self, queries: List[str]) -> np.ndarray:
         """
@@ -1873,8 +1871,14 @@ class EmbeddingRetriever(DenseRetriever):
 
     @staticmethod
     def _infer_model_format(model_name_or_path: str, use_auth_token: Optional[Union[str, bool]]) -> str:
-        valid_openai_model_name = model_name_or_path in ["ada", "babbage", "davinci", "curie"] or any(
-            m in model_name_or_path for m in ["-ada-", "-babbage-", "-davinci-", "-curie-"]
+        valid_openai_model_name = model_name_or_path in {
+            "ada",
+            "babbage",
+            "davinci",
+            "curie",
+        } or any(
+            m in model_name_or_path
+            for m in ["-ada-", "-babbage-", "-davinci-", "-curie-"]
         )
         if valid_openai_model_name:
             return "openai"
@@ -1898,11 +1902,7 @@ class EmbeddingRetriever(DenseRetriever):
 
         # Check if retribert model
         config = AutoConfig.from_pretrained(model_name_or_path, use_auth_token=use_auth_token)
-        if config.model_type == "retribert":
-            return "retribert"
-
-        # Model is neither sentence-transformers nor retribert model -> use _DefaultEmbeddingEncoder
-        return "farm"
+        return "retribert" if config.model_type == "retribert" else "farm"
 
     def train(
         self,

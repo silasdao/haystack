@@ -89,9 +89,7 @@ class _OpenAIEmbeddingEncoder(_BaseEmbeddingEncoder):
         )
 
         tokenized_payload = self._tokenizer.encode(text)
-        decoded_string = self._tokenizer.decode(tokenized_payload[: self.max_seq_len])
-
-        return decoded_string
+        return self._tokenizer.decode(tokenized_payload[: self.max_seq_len])
 
     def embed(self, model: str, text: List[str]) -> np.ndarray:
         if self.api_key is None:
